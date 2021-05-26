@@ -70,4 +70,8 @@ print(round(minVar, 3), [round(x, 3) for x in minVarWeights])
 
 
 
-
+def calculatedResults(meanReturns, covMatrix, riskFreeRate=0, constraintSet=(0,1)):
+    """
+    Read in mean, cov matrix, and other financial infromation
+    Output max Sharpe ratio, min Volati
+    """
