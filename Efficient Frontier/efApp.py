@@ -74,6 +74,12 @@ def efficientOpt(meanReturns, covMatrix, returnTarget, constraintSet=(0,1)):
     """
     For each returnTarget, we want to optimize the portfolio for min variance
     """
+    numAssets = len(meanReturns)
+    args = (meanReturns, covMatrix)
+    
+
+
+
 
 def calculatedResults(meanReturns, covMatrix, riskFreeRate=0, constraintSet=(0,1)):
     """
