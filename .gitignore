@@ -78,10 +78,6 @@ instance/
 # Sphinx documentation
 docs/_build/
 
-# Uneeded
-Options
-VaR
-
 # PyBuilder
 .pybuilder/
 target/
@@ -147,3 +143,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Uneeded
+deprecated

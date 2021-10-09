@@ -15,7 +15,6 @@ def getData(stocks, start, end):
     covMatrix = returns.cov()
     return meanReturns, covMatrix
 
-
 # Mean returns and standard deviations
 def portfolioPerformance(weights, meanReturns, covMatrix):
     returns = np.sum(meanReturns*weights)*1
