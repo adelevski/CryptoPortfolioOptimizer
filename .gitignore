@@ -144,5 +144,7 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# Uneeded
+# Personal
 deprecated
+config.py
+alts.py
