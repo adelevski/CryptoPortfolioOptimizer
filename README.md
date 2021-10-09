@@ -1,2 +1,3 @@
-# quantitative_research
- here I will continue to explore different techniques of quantitative research, including options pricing models, risk management models and more
+# Crypto Portfolio Optimizer
+
+An MPT inspired cryptocurrency portfolio optimizer, using SciPy's optimization package and yfinance for pricing data.
