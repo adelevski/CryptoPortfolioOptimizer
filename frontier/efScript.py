@@ -3,7 +3,7 @@ from efFuncs import getData, EF_graph
 
 
 
-stocks = ['AAPL', 'TSLA', 'MSFT']
+stocks = ['AAPL', 'TSLA']
 
 # # Time
 endDate = dt.datetime.now()
