@@ -3,10 +3,12 @@ import pandas as pd
 import scipy.optimize as sc
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import matplotlib.patches as mpatches
+from matplotlib.lines import Line2D
 from numpy.random import default_rng
 
 
-RFR = 0.00
+RFR = 0.05
 
 
 def port_performance(weights, mean_returns, cov_matrix, delta_days):
@@ -65,18 +67,30 @@ def maximize_sharpe(mean_returns, cov_matrix, delta_days, bound=(0,1)):
 
 def simulate_portfolios(mean_returns, cov_matrix, delta_days):
     num_ports = 10000
+    num_assets = len(mean_returns)
+
     sharpe_ratios = np.zeros(num_ports)
     exp_returns = np.zeros(num_ports)
     exp_vols = np.zeros(num_ports)
-    weights = np.zeros((num_ports, len(mean_returns)))
+
+    weights = np.zeros((num_ports, num_assets))
+
+    single_asset_returns = np.zeros(num_assets)
+    single_asset_vols = np.zeros(num_assets)
+
     rng = default_rng()
 
     for k in range(num_ports):
-        w = rng.uniform(0, 1, size=len(mean_returns))
+        w = rng.uniform(0, 1, size=num_assets)
         weights[k] = w / np.sum(w)
         exp_returns[k], exp_vols[k] = port_performance(weights[k], mean_returns, cov_matrix, delta_days)
-        sharpe_ratios[k] = exp_returns[k] / exp_vols[k]
-    return exp_returns, exp_vols, sharpe_ratios, weights
+        sharpe_ratios[k] = (exp_returns[k] - RFR) / exp_vols[k]
+    for i in range(num_assets):
+        w = np.zeros(num_assets)
+        w[i] = 1
+        single_asset_returns[i],  single_asset_vols[i] = port_performance(w, mean_returns, cov_matrix, delta_days)
+
+    return exp_returns, exp_vols, sharpe_ratios, weights, single_asset_returns, single_asset_vols
 
 
 def efficient_frontier(mean_returns, cov_matrix, delta_days, return_target, bound=(0,1)):
@@ -114,8 +128,9 @@ def get_results(mean_returns, cov_matrix, delta_days):
 
 
 def plot_results(mean_returns, cov_matrix, delta_days, assets):
+    assets.sort()
     max_rets_perf, min_vol_perf, max_sharpe_perf, frontier_list, target_returns = get_results(mean_returns, cov_matrix, delta_days)
-    sim_returns, sim_vols, sim_sharpe, weights = simulate_portfolios(mean_returns, cov_matrix, delta_days)
+    sim_returns, sim_vols, sim_sharpe, weights, single_asset_returns, single_asset_vols = simulate_portfolios(mean_returns, cov_matrix, delta_days)
     sim_max_index = sim_sharpe.argmax()
 
     max_rets_w = max_rets_perf[2]
@@ -130,30 +145,36 @@ def plot_results(mean_returns, cov_matrix, delta_days, assets):
     max_sharpe_weights = [{ticker.split('-')[0]:round(x, 1)} for ticker, x in zip(assets, max_sharpe_w)]
     max_sharpe_final = [d for d in max_sharpe_weights if list(d.values())[0] > 0]
 
-    sim_max_sharpe_w = weights[sim_max_index]
-    sim_max_sharpe_w = [round(i * 100, 3) for i in sim_max_sharpe_w]
-    sim_max_sharpe_weights = [{ticker.split('-')[0]:round(x, 1)} for ticker, x in zip(assets, sim_max_sharpe_w)]
-    sim_max_sharpe_final = [d for d in sim_max_sharpe_weights if list(d.values())[0] > 0]
-
     font1 = {'family':'serif','color':'blue','size':20}
     font2 = {'family':'serif','color':'darkred','size':15}
+
+    x_vals = np.linspace(0, max_sharpe_perf[1] * 1.5, 10)
+    slope = (max_sharpe_perf[0] - RFR) / max_sharpe_perf[1]
+    y_vals = (slope * x_vals) + RFR
 
     plt.figure(figsize=(20, 6))
     plt.scatter(sim_vols, sim_returns, c=sim_sharpe)
     plt.title("Efficient Frontier", fontdict=font1)
-    plt.xlabel("Expected Volatility", fontdict=font2)
-    plt.ylabel("Expected Returns", fontdict=font2)
+    plt.xlabel("Expected Volatility %", fontdict=font2)
+    plt.ylabel("Expected Returns %", fontdict=font2)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1))
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1))
-    plt.colorbar(label="SR")
-    plt.scatter(max_rets_perf[1], max_rets_perf[0], c="blue", marker="*", s=200, label="Max Returns")
-    plt.scatter(min_vol_perf[1], min_vol_perf[0], c="magenta", marker="*", s=200, label="Min Volatility")
-    plt.scatter(sim_vols[sim_max_index], sim_returns[sim_max_index], c="red", s=50, label="Sim Max SR")
-    plt.scatter(max_sharpe_perf[1], max_sharpe_perf[0], c="orange", s=50, label="Opt Max SR")
+    plt.colorbar().set_label(label="Sharpe Ratio", fontdict=font2)
+    plt.scatter(max_sharpe_perf[1], max_sharpe_perf[0], c="red", marker="*", s=200, label="Max Sharpe")
+    plt.scatter(max_rets_perf[1], max_rets_perf[0], c="blue", s=125, label="Max Returns")
+    plt.scatter(min_vol_perf[1], min_vol_perf[0], c="magenta", s=125, label="Min Volatility")
+    for i in range(len(assets)):
+        plt.scatter(single_asset_vols[i], single_asset_returns[i], c="black")
+        plt.text(single_asset_vols[i], single_asset_returns[i], f"{assets[i].split('-')[0]}")
     plt.plot(frontier_list, target_returns, label="Frontier")
-    plt.legend()
+    plt.plot(x_vals, y_vals, c="purple", label="CML")
+    plt.margins(x=0)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    black_circle = Line2D([0], [0], marker='o', color='w', label='Single Asset',
+                        markerfacecolor='black', markersize=9)
+    handles.extend([black_circle])
+    plt.legend(handles=handles)
     plt.show()
     print(f"Max Returns: {max_rets_final}")
     print(f"Min Volatility: {min_vol_final}")
-    print(f"Sim Max SR: {sim_max_sharpe_final}")
-    print(f"Opt Max SR: {max_sharpe_final}")
+    print(f"Max Sharpe: {max_sharpe_final}")
