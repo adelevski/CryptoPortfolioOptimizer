@@ -71,6 +71,7 @@ def get_portfolio(format: bool=False):
 
     return df, total_value
 
+
 def get_owned():
     port = get_portfolio()
     owned = list(port[0].index)

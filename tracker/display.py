@@ -1,5 +1,4 @@
 import pandas as pd
-
 from tracker import get_total
 from tracker import get_prices
 from tracker import get_portfolio

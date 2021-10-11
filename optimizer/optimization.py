@@ -14,20 +14,24 @@ def port_performance(weights, mean_returns, cov_matrix, delta_days):
     expected_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(delta_days)
     return expected_returns, expected_volatility
 
+
 def port_returns(weights, mean_returns, cov_matrix, delta_days, negative):
     if negative:
         return -1 * port_performance(weights, mean_returns, cov_matrix, delta_days)[0]
     else:
         return port_performance(weights, mean_returns, cov_matrix, delta_days)[0]
 
+
 def port_volatility(weights, mean_returns, cov_matrix, delta_days):
     return port_performance(weights, mean_returns, cov_matrix, delta_days)[1]
+
 
 def negative_sharpe(weights, mean_returns, cov_matrix, delta_days, rfr=RFR):
     expected_returns, expected_volatility = port_performance(weights, mean_returns, cov_matrix, delta_days)
     sharpe_ratio = (expected_returns - rfr) / expected_volatility
     neg_sharpe = -1 * sharpe_ratio
     return neg_sharpe
+
 
 def maximize_returns(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     num_assets = len(mean_returns)
@@ -38,6 +42,7 @@ def maximize_returns(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     result = sc.minimize(port_returns, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
     return result
 
+
 def minimize_volatility(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     num_assets = len(mean_returns)
     initial_weights = num_assets * [1.0 / num_assets]
@@ -47,6 +52,7 @@ def minimize_volatility(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     result = sc.minimize(port_volatility, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
     return result
 
+
 def maximize_sharpe(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     num_assets = len(mean_returns)
     initial_weights = num_assets * [1.0 / num_assets]
@@ -55,6 +61,7 @@ def maximize_sharpe(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     constraints = ({"type": "eq", "fun": lambda weights: np.sum(weights) - 1})
     result = sc.minimize(negative_sharpe, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
     return result
+
 
 def simulate_portfolios(mean_returns, cov_matrix, delta_days):
     num_ports = 10000
@@ -71,6 +78,7 @@ def simulate_portfolios(mean_returns, cov_matrix, delta_days):
         sharpe_ratios[k] = exp_returns[k] / exp_vols[k]
     return exp_returns, exp_vols, sharpe_ratios, weights
 
+
 def efficient_frontier(mean_returns, cov_matrix, delta_days, return_target, bound=(0,1)):
     num_assets = len(mean_returns)
     initial_w = num_assets * [1.0 / num_assets]
@@ -80,6 +88,7 @@ def efficient_frontier(mean_returns, cov_matrix, delta_days, return_target, boun
                    {'type': 'eq', 'fun': lambda w: port_returns(w, mean_returns, cov_matrix, delta_days, negative=False) - return_target})
     opt = sc.minimize(port_volatility, initial_w, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
     return opt['fun']
+
 
 def get_results(mean_returns, cov_matrix, delta_days):
     max_rets_port = maximize_returns(mean_returns, cov_matrix, delta_days)['x']
@@ -102,6 +111,7 @@ def get_results(mean_returns, cov_matrix, delta_days):
     max_sharpe_perf = (max_sharpe_returns, max_sharpe_vol, [round(i * 100, 3) for i in max_sharpe_port])
 
     return max_rets_perf, min_vol_perf, max_sharpe_perf, frontier_list, target_returns
+
 
 def plot_results(mean_returns, cov_matrix, delta_days, assets):
     max_rets_perf, min_vol_perf, max_sharpe_perf, frontier_list, target_returns = get_results(mean_returns, cov_matrix, delta_days)
