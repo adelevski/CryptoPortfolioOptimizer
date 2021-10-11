@@ -1,5 +1,6 @@
 import ccxt
-import config
+
+import tracker.config as config
 from coinmarketcapapi import CoinMarketCapAPI
 
 
