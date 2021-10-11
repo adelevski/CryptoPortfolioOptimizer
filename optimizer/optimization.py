@@ -3,12 +3,11 @@ import pandas as pd
 import scipy.optimize as sc
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 from numpy.random import default_rng
 
 
-RFR = 0.05
+RFR = 0.00
 
 
 def port_performance(weights, mean_returns, cov_matrix, delta_days):
@@ -154,15 +153,15 @@ def plot_results(mean_returns, cov_matrix, delta_days, assets):
 
     plt.figure(figsize=(20, 6))
     plt.scatter(sim_vols, sim_returns, c=sim_sharpe)
-    plt.title("Efficient Frontier", fontdict=font1)
+    plt.title(f"Efficient Frontier - Past {delta_days - 1} days", fontdict=font1)
     plt.xlabel("Expected Volatility %", fontdict=font2)
     plt.ylabel("Expected Returns %", fontdict=font2)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1))
     plt.gca().xaxis.set_major_formatter(mtick.PercentFormatter(1))
     plt.colorbar().set_label(label="Sharpe Ratio", fontdict=font2)
     plt.scatter(max_sharpe_perf[1], max_sharpe_perf[0], c="red", marker="*", s=200, label="Max Sharpe")
-    plt.scatter(max_rets_perf[1], max_rets_perf[0], c="blue", s=125, label="Max Returns")
-    plt.scatter(min_vol_perf[1], min_vol_perf[0], c="magenta", s=125, label="Min Volatility")
+    plt.scatter(max_rets_perf[1], max_rets_perf[0], c="blue", s=80, label="Max Returns")
+    plt.scatter(min_vol_perf[1], min_vol_perf[0], c="magenta", s=80, label="Min Volatility")
     for i in range(len(assets)):
         plt.scatter(single_asset_vols[i], single_asset_returns[i], c="black")
         plt.text(single_asset_vols[i], single_asset_returns[i], f"{assets[i].split('-')[0]}")
