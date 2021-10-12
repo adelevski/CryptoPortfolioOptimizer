@@ -313,11 +313,11 @@ def plot_results(
     assets: List[str]
 ) -> None:
     """
-    Main function of the file. Takes in the mean returns of a set of assets,
-    their covariance matrix, the time period for which those were calculated,
-    and the assets themselves and calls all needed functions in order to 
-    display the plot of the efficient frontier and all portfolios and all
-    simulated portfolios. It also plots the Capital Market Line, and the
+    Plotting function of the file. Takes in the mean returns of a set of
+    assets, their covariance matrix, the time period for which those were
+    calculated, and the assets themselves and calls all needed functions in
+    order to display the plot of the efficient frontier and all portfolios and
+    all simulated portfolios. It also plots the Capital Market Line, and the
     single asset allocation locations on the plot. It also displays a legend,
     and the sharpe ratio bar for visualization. 
     """
@@ -354,27 +354,32 @@ def plot_results(
     # Plotting optimization and simulation results
     plt.figure(figsize=(20, 6))
     plt.scatter(sim_vols, sim_returns, c=sim_sharpe)
-    plt.scatter(max_sr[1], max_sr[0], c="red", marker="*", s=200, label="Max Sharpe")
-    plt.scatter(max_ret[1], max_ret[0], c="blue", s=80, label="Max Returns")
-    plt.scatter(min_vol[1], min_vol[0], c="magenta", s=80, label="Min Volatility")
+    plt.scatter(max_sr[1], max_sr[0], c="red", marker="*", \
+                            s=200, label="Max Sharpe")
+    plt.scatter(max_ret[1], max_ret[0], c="blue", \
+                            s=80, label="Max Returns")
+    plt.scatter(min_vol[1], min_vol[0], c="magenta", \
+                            s=80, label="Min Volatility")
     for i in range(len(assets)):
         plt.scatter(single_asset_vols[i], single_asset_returns[i], c="black")
-        plt.text(single_asset_vols[i], single_asset_returns[i], f"{assets[i].split('-')[0]}")
+        plt.text(single_asset_vols[i], single_asset_returns[i], \
+                                    f"{assets[i].split('-')[0]}")
     
     # Plotting frontier and CML
     plt.plot(frontier_list, target_returns, label="Frontier")
     plt.plot(x_vals, y_vals, c="purple", label="CML")
 
     # Plot title, labels, and colorbar
-    plt.title(f"Efficient Frontier - (past {delta_days} trading days)", fontdict=font1)
+    plt.title(f"Efficient Frontier - (past {delta_days} trading days)", \
+                                                        fontdict=font1)
     plt.xlabel("Expected Volatility %", fontdict=font2)
     plt.ylabel("Expected Returns %", fontdict=font2)
     plt.colorbar().set_label(label="Sharpe Ratio", fontdict=font2)
     
     # Plot legend
     handles, labels = plt.gca().get_legend_handles_labels()
-    black_circle = Line2D([0], [0], marker='o', color='w', label='Single Asset',
-                        markerfacecolor='black', markersize=9)
+    black_circle = Line2D([0], [0], marker='o', color='w', \
+        label='Single Asset', markerfacecolor='black', markersize=9)
     handles.extend([black_circle])
     plt.legend(handles=handles)
 
