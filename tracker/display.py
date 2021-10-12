@@ -4,7 +4,9 @@ from tracker import get_prices
 from tracker import get_portfolio
 
 
-def display_port():
+
+def display_port() -> None:
+    """ Fetches total crypto portfolio and displays the results """
     portfolio, total_value = get_portfolio(format=True)
     print(portfolio)
     print(f"Total value: ${total_value:.2f}")

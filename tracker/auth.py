@@ -3,6 +3,12 @@ import tracker.config as config
 from coinmarketcapapi import CoinMarketCapAPI
 
 
+
+""" 
+This script initializes and authenticates 
+all crypto exchange ccxt clients and the CoinMarketCap API
+"""
+
 coinbase = ccxt.coinbase({
     'apiKey': config.COINBASE_KEY,
     'secret': config.COINBASE_SECRET
