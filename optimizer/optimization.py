@@ -19,7 +19,7 @@ def expected_return(
     weights: List[float], 
     mean_returns: pd.core.series.Series,
     delta_days: int,
-    negative: bool=False
+    sign: float=1.0
 ) -> float:
     """
     Given a set of weights of assets, their mean returns, and the time period
@@ -28,15 +28,13 @@ def expected_return(
     Notes:
         - Instead of calculating annualized returns/volatilities, I decided
         to use the time period instead. I prefer it this way since if we are
-        performing research on just the past week (for insights into maybe what
-        the next week will hold) annualized returns do not make sense.
-        - The function takens in a boolean "negative" which decides if the 
-        return will be positive/negative (for optimization's sake)
+        performing research on just the past week (for insights into maybe
+        what the next week will hold) annualized returns do not make sense.
+        - The "sign" argument is there for the purposes of the 
+        "maximize_return" function which passes in "sign = -1.0" for the sake
+        of the scipy minimize function.
     """
-    if negative:
-        return -1 * np.sum(mean_returns * weights) * delta_days
-    else:
-        return np.sum(mean_returns * weights) * delta_days
+    return sign*np.sum(mean_returns * weights) * delta_days
 
 
 def expected_volatility(
@@ -63,10 +61,10 @@ def negative_sharpe(weights, mean_returns, cov_matrix, delta_days, rfr=RFR):
     return neg_sharpe
 
 
-def maximize_returns(mean_returns, cov_matrix, delta_days, bound=(0,1)):
+def maximize_return(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     num_assets = len(mean_returns)
     initial_weights = num_assets * [1.0 / num_assets]
-    arguments = (mean_returns, delta_days, True)
+    arguments = (mean_returns, delta_days, -1.0)
     bounds = tuple(bound for asset in range(num_assets))
     constraints = ({"type": "eq", "fun": lambda weights: np.sum(weights) - 1})
     result = sc.minimize(expected_return, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
@@ -135,7 +133,7 @@ def efficient_frontier(mean_returns, cov_matrix, delta_days, return_target, boun
 
 
 def get_results(mean_returns, cov_matrix, delta_days):
-    max_rets_port = maximize_returns(mean_returns, cov_matrix, delta_days)['x']
+    max_rets_port = maximize_return(mean_returns, cov_matrix, delta_days)['x']
     max_rets_returns = expected_return(max_rets_port, mean_returns, delta_days)
     max_rets_vol = expected_volatility(max_rets_port, cov_matrix, delta_days)
 
