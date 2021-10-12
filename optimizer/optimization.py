@@ -1,3 +1,4 @@
+# Functional imports
 import numpy as np
 import pandas as pd
 import scipy.optimize as sc
@@ -6,30 +7,58 @@ import matplotlib.ticker as mtick
 from matplotlib.lines import Line2D
 from numpy.random import default_rng
 
+# Imports for type hints
+from typing import List, Tuple
 
+
+# Global variable for the risk-free rate
 RFR = 0.00
 
 
-def port_performance(weights, mean_returns, cov_matrix, delta_days):
-    expected_returns = np.sum(mean_returns * weights) * delta_days
-    expected_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(delta_days)
-    return expected_returns, expected_volatility
-
-
-def port_returns(weights, mean_returns, cov_matrix, delta_days, negative):
+def expected_return(
+    weights: List[float], 
+    mean_returns: pd.core.series.Series,
+    delta_days: int,
+    negative: bool=False
+) -> float:
+    """
+    Given a set of weights of assets, their mean returns, and the time period
+    for which these statistics have been calculated, this function will 
+    calculate and return the expected return for such a portfolio.
+    Notes:
+        - Instead of calculating annualized returns/volatilities, I decided
+        to use the time period instead. I prefer it this way since if we are
+        performing research on just the past week (for insights into maybe what
+        the next week will hold) annualized returns do not make sense.
+        - The function takens in a boolean "negative" which decides if the 
+        return will be positive/negative (for optimization's sake)
+    """
     if negative:
-        return -1 * port_performance(weights, mean_returns, cov_matrix, delta_days)[0]
+        return -1 * np.sum(mean_returns * weights) * delta_days
     else:
-        return port_performance(weights, mean_returns, cov_matrix, delta_days)[0]
+        return np.sum(mean_returns * weights) * delta_days
 
 
-def port_volatility(weights, mean_returns, cov_matrix, delta_days):
-    return port_performance(weights, mean_returns, cov_matrix, delta_days)[1]
+def expected_volatility(
+    weights: List[float], 
+    cov_matrix: pd.core.frame.DataFrame,
+    delta_days: int
+) -> float:
+    """
+    Given a set of weights of assets, their covariance matrix, and the time
+    period for which these statistics have been calculated, this function will 
+    calculate and return the expected volatility for such a portfolio.
+    Notes:
+        - Uses time period instead of annualization. See docstring of
+        expected_return function above.
+    """
+    return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(delta_days)
 
 
 def negative_sharpe(weights, mean_returns, cov_matrix, delta_days, rfr=RFR):
-    expected_returns, expected_volatility = port_performance(weights, mean_returns, cov_matrix, delta_days)
-    sharpe_ratio = (expected_returns - rfr) / expected_volatility
+    exp_return = expected_return(weights, mean_returns, delta_days)
+    exp_volatility = expected_volatility(weights, cov_matrix, delta_days)
+    sharpe_ratio = (exp_return - rfr) / exp_volatility
     neg_sharpe = -1 * sharpe_ratio
     return neg_sharpe
 
@@ -37,20 +66,20 @@ def negative_sharpe(weights, mean_returns, cov_matrix, delta_days, rfr=RFR):
 def maximize_returns(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     num_assets = len(mean_returns)
     initial_weights = num_assets * [1.0 / num_assets]
-    arguments = (mean_returns, cov_matrix, delta_days, True)
+    arguments = (mean_returns, delta_days, True)
     bounds = tuple(bound for asset in range(num_assets))
     constraints = ({"type": "eq", "fun": lambda weights: np.sum(weights) - 1})
-    result = sc.minimize(port_returns, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
+    result = sc.minimize(expected_return, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
     return result
 
 
 def minimize_volatility(mean_returns, cov_matrix, delta_days, bound=(0,1)):
     num_assets = len(mean_returns)
     initial_weights = num_assets * [1.0 / num_assets]
-    arguments = (mean_returns, cov_matrix, delta_days)
+    arguments = (cov_matrix, delta_days)
     bounds = tuple(bound for asset in range(num_assets))
     constraints = ({"type": "eq", "fun": lambda weights: np.sum(weights) - 1})
-    result = sc.minimize(port_volatility, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
+    result = sc.minimize(expected_volatility, initial_weights, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
     return result
 
 
@@ -82,12 +111,14 @@ def simulate_portfolios(mean_returns, cov_matrix, delta_days):
     for k in range(num_ports):
         w = rng.uniform(0, 1, size=num_assets)
         weights[k] = w / np.sum(w)
-        exp_returns[k], exp_vols[k] = port_performance(weights[k], mean_returns, cov_matrix, delta_days)
+        exp_returns[k] = expected_return(weights[k], mean_returns, delta_days)
+        exp_vols[k] = expected_volatility(weights[k], cov_matrix, delta_days)
         sharpe_ratios[k] = (exp_returns[k] - RFR) / exp_vols[k]
     for i in range(num_assets):
         w = np.zeros(num_assets)
         w[i] = 1
-        single_asset_returns[i],  single_asset_vols[i] = port_performance(w, mean_returns, cov_matrix, delta_days)
+        single_asset_returns[i] = expected_return(w, mean_returns, delta_days)
+        single_asset_vols[i] = expected_volatility(w, cov_matrix, delta_days)
 
     return exp_returns, exp_vols, sharpe_ratios, weights, single_asset_returns, single_asset_vols
 
@@ -95,23 +126,26 @@ def simulate_portfolios(mean_returns, cov_matrix, delta_days):
 def efficient_frontier(mean_returns, cov_matrix, delta_days, return_target, bound=(0,1)):
     num_assets = len(mean_returns)
     initial_w = num_assets * [1.0 / num_assets]
-    arguments = (mean_returns, cov_matrix, delta_days)
+    arguments = (cov_matrix, delta_days)
     bounds = tuple(bound for asset in range(num_assets))
     constraints = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1},
-                   {'type': 'eq', 'fun': lambda w: port_returns(w, mean_returns, cov_matrix, delta_days, negative=False) - return_target})
-    opt = sc.minimize(port_volatility, initial_w, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
+                   {'type': 'eq', 'fun': lambda w: expected_return(w, mean_returns, delta_days) - return_target})
+    opt = sc.minimize(expected_volatility, initial_w, method='SLSQP', args=arguments, bounds=bounds, constraints=constraints)
     return opt['fun']
 
 
 def get_results(mean_returns, cov_matrix, delta_days):
     max_rets_port = maximize_returns(mean_returns, cov_matrix, delta_days)['x']
-    max_rets_returns, max_rets_vol = port_performance(max_rets_port, mean_returns, cov_matrix, delta_days)
+    max_rets_returns = expected_return(max_rets_port, mean_returns, delta_days)
+    max_rets_vol = expected_volatility(max_rets_port, cov_matrix, delta_days)
 
     min_vol_port = minimize_volatility(mean_returns, cov_matrix, delta_days)['x']
-    min_vol_returns, min_vol_vol = port_performance(min_vol_port, mean_returns, cov_matrix, delta_days)
+    min_vol_returns = expected_return(min_vol_port, mean_returns, delta_days)
+    min_vol_vol = expected_volatility(min_vol_port, cov_matrix, delta_days)
 
     max_sharpe_port = maximize_sharpe(mean_returns, cov_matrix, delta_days)['x']
-    max_sharpe_returns, max_sharpe_vol = port_performance(max_sharpe_port, mean_returns, cov_matrix, delta_days)
+    max_sharpe_returns = expected_return(max_sharpe_port, mean_returns, delta_days)
+    max_sharpe_vol = expected_volatility(max_sharpe_port, cov_matrix, delta_days)
 
     frontier_list = []
     target_returns = np.linspace(min_vol_returns, max_rets_returns, 50)
@@ -153,7 +187,7 @@ def plot_results(mean_returns, cov_matrix, delta_days, assets):
 
     plt.figure(figsize=(20, 6))
     plt.scatter(sim_vols, sim_returns, c=sim_sharpe)
-    plt.title(f"Efficient Frontier - Past {delta_days - 1} days", fontdict=font1)
+    plt.title(f"Efficient Frontier - (past {delta_days} trading days)", fontdict=font1)
     plt.xlabel("Expected Volatility %", fontdict=font2)
     plt.ylabel("Expected Returns %", fontdict=font2)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1))
