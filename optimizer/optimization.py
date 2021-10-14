@@ -390,6 +390,6 @@ def plot_results(
 
     # Plot and results displaying
     plt.show()
-    print(f"Max Returns: {max_rets_final}")
-    print(f"Min Volatility: {min_vol_final}")
-    print(f"Max Sharpe: {max_sharpe_final}")
+    print(f"Max Returns: {max_rets_weights}")
+    print(f"Min Volatility: {min_vol_weights}")
+    print(f"Max Sharpe: {max_sharpe_weights}")
