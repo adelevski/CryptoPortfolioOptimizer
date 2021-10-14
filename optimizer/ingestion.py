@@ -25,6 +25,7 @@ def get_data(
         ticker, and also some crypto have unconventional namings, with numbers
         attached to the end of the ticker, e.g. SOL1, DOT1, GRT2, etc...
     """
+    print("Downloading historical price data...")
     asset_data = yf.download(assets, start=start, end=end)
     asset_data = asset_data['Adj Close'] # Takes care of stock splits/etc...
     delta_days = len(asset_data)

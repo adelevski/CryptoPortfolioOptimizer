@@ -7,7 +7,10 @@ import matplotlib.ticker as mtick
 from matplotlib.lines import Line2D
 from numpy.random import default_rng
 
+from optimizer.ingestion import get_data
+
 # Imports for type hints
+import datetime as dt
 from typing import List, Tuple
 
 
@@ -267,6 +270,7 @@ def get_results(
         the corresponding np.ndarray of return targets for the efficient
         frontier.
     """
+    print("Performing optimizations...")
     # Maximum return weights, return, and volatility
     max_ret_w = maximize_return(mean_returns, delta_days)['x']
     max_ret_ret = expected_return(max_ret_w, mean_returns, delta_days)
@@ -309,6 +313,8 @@ def format_weights(assets: List[str], weights: List[float]) -> List[dict]:
 def plot_results(
     mean_returns: pd.core.series.Series, 
     cov_matrix: pd.core.frame.DataFrame, 
+    start_date: dt.datetime,
+    end_date: dt.datetime,
     delta_days: int, 
     assets: List[str]
 ) -> None:
@@ -370,8 +376,10 @@ def plot_results(
     plt.plot(x_vals, y_vals, c="purple", label="CML")
 
     # Plot title, labels, and colorbar
-    plt.title(f"Efficient Frontier - (past {delta_days} trading days)", \
-                                                        fontdict=font1)
+    plt.title((f"Efficient Frontier - " + \
+               f"({start_date.strftime('%m/%d/%Y')} - " + \
+               f"{end_date.strftime('%m/%d/%Y')})"), fontdict=font1)
+
     plt.xlabel("Expected Volatility %", fontdict=font2)
     plt.ylabel("Expected Returns %", fontdict=font2)
     plt.colorbar().set_label(label="Sharpe Ratio", fontdict=font2)
@@ -393,3 +401,7 @@ def plot_results(
     print(f"Max Returns: {max_rets_weights}")
     print(f"Min Volatility: {min_vol_weights}")
     print(f"Max Sharpe: {max_sharpe_weights}")
+
+def optimize(assets, start_date, end_date, log):
+    mean_returns, cov_matrix, delta_days = get_data(assets, start_date, end_date, log)
+    plot_results(mean_returns, cov_matrix, start_date, end_date, delta_days, assets)
