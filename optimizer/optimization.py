@@ -16,7 +16,7 @@ from typing import List, Tuple
 
 
 # Global variable for the risk-free rate
-RFR = 0.00
+RFR = 0.05
 # Global variable for the default bounds for allocation per asset            
 ASSET_BOUND = (0, 1) 
 # Global variable for the number of portfolios to be simulated
